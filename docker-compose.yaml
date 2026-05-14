@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shopit_backend
+    ports:
+      - '4000:4000'
+    env_file:
+      - ./backend/config/config.env
+    environment:
+      NODE_ENV: DEVELOPMENT
+      PORT: 4000
+      DB_LOCAL_URI: mongodb://mongo:27017/shopit
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shopit_frontend
+    ports:
+      - '3000:80'
+    depends_on:
+      - backend
+
+  mongo:
+    image: mongo:6
+    container_name: shopit_mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongo_data:
